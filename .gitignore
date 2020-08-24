@@ -2,5 +2,6 @@
 /shelf/
 **/.idea/workspace.xml
 **/.idea/usage.statistics.xml
+**/.idea/uiDesigner.xml
 out/
 target/
