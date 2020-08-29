@@ -45,14 +45,14 @@ public class SimpleEncoder implements IEncoder {
         // For every full byte of secret we store, a continue bit is inserted to inform the decoder if
         // another byte of data is available.
         for (int bitIndex = 0; bitIndex < secret.length * 8; bitIndex++) {
-            int secretByteIndex = (bitIndex + offset) / 8;
-            // We store 3 bits of the secret per pixel (one for each colour channel excluding the alpha)
+            int secretByteIndex = bitIndex / 8;
+            // We store 3 bits of the secret per pixel (one for each colour subpixel excluding the alpha)
             int pixelIndex = (bitIndex + offset) / 3;
-            int channelIndex = (bitIndex + offset) % 3;
+            int subpixelIndex = (bitIndex + offset) % 3;
 
             // Shift which bit of the secret we are using to the right each time, and if it's non zero that means
             // we have a 1 for the secret bit.
-            int secretBit = (secret[secretByteIndex] & (0x80 >> (((bitIndex + offset) % 8)))) == 0 ? 0 : 1;
+            int secretBit = (secret[secretByteIndex] & (0x80 >> (((bitIndex) % 8)))) == 0 ? 0 : 1;
 
             // Split the current pixel into R, G, B
             int[] subpixel = {
@@ -62,23 +62,36 @@ public class SimpleEncoder implements IEncoder {
             };
 
             // We need to compare the lsb of the image to the secret to see if a modification is necessary.
-            if (secretBit != (subpixel[channelIndex] & 0x1)) {
+            if (secretBit != (subpixel[subpixelIndex] & 0x1)) {
                 // Set the lsb to whatever the secret bit says it should be
-                subpixel[channelIndex] = (secretBit == 1 ? subpixel[channelIndex] | 1 : subpixel[channelIndex] & 0xFE);
+                subpixel[subpixelIndex] = (secretBit == 1 ? subpixel[subpixelIndex] | 1 : subpixel[subpixelIndex] & 0xFE);
                 pixels[pixelIndex] = (subpixel[0] << 16) + (subpixel[1] << 8) + subpixel[2];
             }
 
             // Every 8th data bit we need a continue bit if the secret is not finished
-            if ((bitIndex % 8) == 0 && bitIndex != 0) {
+            // This will be written to the next subpixel, and then we need to offset the rest of the data
+            // by one subpixel.
+            if (((bitIndex + 1) % 8) == 0) {
                 offset++;
 
-                if ((bitIndex + 1) == (secret.length * 8) - 1) {
-                    // We need to set the lsb to 1 so that the decoder will know the secret ends here
-                    pixels[pixelIndex] |= 1;
+                // If we need to switch pixel, we need to ensure we write to the first subpixel
+                if (subpixelIndex == 2) {
+                    pixelIndex++;
+                    subpixelIndex = 0;
                 } else {
-                    // 0 the lsb if we're on the last byte
-                    pixels[pixelIndex] &= 0xFFFFFE;
+                    subpixelIndex++;
                 }
+
+                // We want to know if there are more secret bytes after this one, if this is the case
+                // then we want to write a 1 (saying more data is available), otherwise we want to write a 0.
+                if (secretByteIndex < (secret.length - 1)) {
+                    subpixel[subpixelIndex] |= 1;
+                } else {
+                    subpixel[subpixelIndex] &= 0xFFFFFE;
+                }
+
+                // Since we must have modified a subpixel, update the buffer
+                pixels[pixelIndex] = (subpixel[0] << 16) + (subpixel[1] << 8) + subpixel[2];
             }
         }
 
@@ -88,11 +101,6 @@ public class SimpleEncoder implements IEncoder {
         return output;
     }
 
-    /**
-     * Checks if the source image is suitable for hiding the secret within.
-     *
-     * @return If the secret can be stored within the image.
-     */
     @Override
     public boolean isEncodable() {
         // The size of the secret (in pixels) is going to be all of the bits required

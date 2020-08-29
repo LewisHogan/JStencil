@@ -2,6 +2,7 @@ package encoders;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
@@ -14,7 +15,7 @@ class SimpleEncoderTest {
      *
      * @param firstImage The first buffered image.
      * @param secondImage The second buffered image.
-     * @return If both buffered images contain the same data.
+     * @return True if both buffered images contain the same data.
      */
     private boolean areEqual(BufferedImage firstImage, BufferedImage secondImage) {
         DataBuffer firstBuffer = firstImage.getData().getDataBuffer();
@@ -53,6 +54,24 @@ class SimpleEncoderTest {
         expectedOutput.setRGB(0, 0, 3, 1, expectedOutputPixels, 0, 1);
 
         IEncoder encoder = new SimpleEncoder(input, "H".getBytes());
+        BufferedImage output = encoder.encode();
+
+        assertTrue(areEqual(output, expectedOutput));
+    }
+
+    @Test
+    void encodeMultipleBytes() {
+        // This test was worked out by hand and the results may be wrong due to human error
+        // TODO: Replace with real input cases once the decoder is made.
+        BufferedImage input = new BufferedImage(7, 1, BufferedImage.TYPE_INT_ARGB);
+        int[] inputPixels = {0x20FFFF, 0x2D4317, 0x1DB72C, 0x27F30B, 0x0C6021, 0x4E6330};
+        input.setRGB(0, 0, 6, 1, inputPixels, 0, 1);
+
+        BufferedImage expectedOutput = new BufferedImage(7, 1, BufferedImage.TYPE_INT_ARGB);
+        int[] expectedOutputPixels = {0x20FFFE, 0x2C4316, 0x1CB62D, 0x26F30A, 0x0C6120, 0x4E6330};
+        expectedOutput.setRGB(0, 0, 6, 1, expectedOutputPixels, 0, 1);
+
+        IEncoder encoder = new SimpleEncoder(input, "HI".getBytes());
         BufferedImage output = encoder.encode();
 
         assertTrue(areEqual(output, expectedOutput));
