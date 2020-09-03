@@ -25,10 +25,6 @@ public class JStencil {
             helpMessage();
             return;
             //Checks if the minimum amount of user arguments have been entered if not give user help message
-        } else if (arguments.length < 8) {
-            errorMessage("Insufficient number of arguments given...");
-            helpMessage();
-            return;
         }
         //Put all of user arguments into map for ease of use later
         Map<String, String> argumentMap = mapArguments(arguments);
@@ -69,7 +65,7 @@ public class JStencil {
                 SimpleDecoder decoder = new SimpleDecoder(image);
                 //saves retuning byte array for be outputted to user
                 byte[] outputString = decoder.decode();
-                //write outputed byte array to file
+                //write outputted byte array to file
                 try (FileOutputStream fos = new FileOutputStream(argumentMap.get("-o"))) {
                     fos.write(outputString);
                 } catch (IOException e) {
@@ -111,7 +107,7 @@ public class JStencil {
      * Displays to the user a help message on how to use the program including a usage example
      */
     private static void helpMessage() {
-        System.out.println("\tUsage: JStencil -i <input-file> -o <output-file> -e [encoder]/ -d [decoder] -s <secret> -k <key>");
+        System.out.println("Usage: JStencil -i <input-file> -o <output-file> -e [encoder]/ -d [decoder] -s <secret> -k <key>");
         String currentDirectory = System.getProperty("user.dir");
         System.out.println("\nExample: JStencil -i " + currentDirectory + "/img1.png -o " + currentDirectory + "/img2.png -e Simple -s " + currentDirectory + "/secret.txt -k " + currentDirectory + "/key.txt");
     }
@@ -122,7 +118,7 @@ public class JStencil {
      * @param Error error message
      */
     private static void errorMessage(String Error) {
-        System.err.println("\tError! " + Error);
+        System.err.println("Error! " + Error);
     }
 
 }
